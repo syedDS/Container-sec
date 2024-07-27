@@ -1,67 +1,41 @@
-name: Vulnerable CI/CD Pipeline
+ name: Vulnerable CI/CD Pipeline
 
-on:
-  push:
-    branches:
-      - main
+   on:
+     push:
+       branches:
+         - main
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+   jobs:
+     build:
+       runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+       steps:
+       - name: Checkout code
+         uses: actions/checkout@v2
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+       - name: Set up Docker Buildx
+         uses: docker/setup-buildx-action@v1
 
-    - name: Print Docker credentials for debugging
-      run: |
-        echo "Docker Username: ${{ secrets.DOCKER_USERNAME }}"
-        echo "Docker Password Length: ${#${{ secrets.DOCKER_PASSWORD }}}"
+       - name: Login to Docker Hub
+         uses: docker/login-action@v1
+         with:
+           username: ${{ secrets.DOCKER_USERNAME }}
+           password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Validate Docker credentials
-      run: |
-        if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
-          echo "DOCKER_USERNAME is not set"
-          exit 1
-        fi
-        if [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
-          echo "DOCKER_PASSWORD is not set"
-          exit 1
-        fi
+       - name: Build and push Docker image
+         run: |
+           docker build -t ${{ secrets.DOCKER_USERNAME }}/vuln01/vulnerable-app:latest .
+           docker push ${{ secrets.DOCKER_USERNAME }}/vuln01/vulnerable-app:latest
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      id: docker-login
+     deploy:
+       needs: build
+       runs-on: ubuntu-latest
 
-    - name: Check Docker login result
-      if: steps.docker-login.outcome != 'success'
-      run: |
-        echo "Docker login failed"
-        exit 1
+       steps:
+       - name: Checkout code
+         uses: actions/checkout@v2
 
-    - name: Verify Docker login
-      run: docker info
-
-    - name: Build and push Docker image
-      run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/vulnerable-app:latest .
-        docker push ${{ secrets.DOCKER_USERNAME }}/vulnerable-app:latest
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Deploy Docker image
-      run: |
-        docker pull ${{ secrets.DOCKER_USERNAME }}/vulnerable-app:latest
-        docker run -d -p 80:80 ${{ secrets.DOCKER_USERNAME }}/vulnerable-app:latest
+       - name: Deploy Docker image
+         run: |
+           docker pull ${{ secrets.DOCKER_USERNAME }}/vuln01/vulnerable-app:latest
+           docker run -d -p 80:80 ${{ secrets.DOCKER_USERNAME }}/vuln01/vulnerable-app:latest
