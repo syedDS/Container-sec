@@ -27,6 +27,13 @@ jobs:
         docker build -t vuln01/vulnerable-app:latest .
         docker push vuln01/vulnerable-app:latest
 
+    - name: Introduce artifact poisoning
+      run: |
+        echo "Introducing malicious code into the Docker image..."
+        echo "This code will be executed when the image is run..." >> Dockerfile
+        docker build -t vuln01/vulnerable-app:latest .
+        docker push vuln01/vulnerable-app:latest
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
