@@ -1,5 +1,3 @@
-name: Vulnerable CI/CD Pipeline
-
 on:
   push:
     branches:
@@ -24,13 +22,6 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        docker build -t vuln01/vulnerable-app:latest .
-        docker push vuln01/vulnerable-app:latest
-
-    - name: Introduce artifact poisoning
-      run: |
-        echo "Introducing malicious code into the Docker image..."
-        echo "This code will be executed when the image is run..." >> Dockerfile
         docker build -t vuln01/vulnerable-app:latest .
         docker push vuln01/vulnerable-app:latest
 
